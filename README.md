@@ -1,4 +1,4 @@
-# Based on work from Ingmar Stapel
+# Based on work from 'Ingmar Stapel'
 https://github.com/custom-build-robots/ai-agents-with-CrewAI
 
 # Adaptations I did
@@ -15,6 +15,8 @@ Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Toget
 - Experimental [OllamaFunctions](https://python.langchain.com/docs/integrations/chat/ollama_functions/) did not work for me at all
   - Did not invest much time though - just wrapped the OllamaChat and tried out with Mistral, openhermes, Mixtral, ... Nothing worked. Even openhermes that did well without that wrapper :shrug:
 
+
+# The rest of the README of from the original repo of 'Ingmar Stapel'
 
 # AT-agents realized with CrewAI
 This program uses CrewAI to build a web-app using three agents doing some research stuff in the internet.
