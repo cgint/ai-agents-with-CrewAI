@@ -10,6 +10,8 @@ Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Toget
 ## Funciton Calling So far:
 - Ollama-Openhermes performed on par with GPT-4
 - Ollama and Mistral, Mixtral, llama2, codellama and even nexusraven had lots of issues
+- Experimental [OllamaFunctions](https://python.langchain.com/docs/integrations/chat/ollama_functions/) did not work for me at all
+  - Did not invest much time though - just wrapped the OllamaChat and tried out with Mistral, openhermes, Mixtral, ... Nothing worked. Even openhermes that did well without that wrapper :shrug:
 
 
 # AT-agents realized with CrewAI
