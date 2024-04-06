@@ -21,3 +21,7 @@ def get_models_openai() -> list[str]:
 
 def get_model_default_openai() -> str:
     return model_gpt3_5_turbo_instruct
+
+def get_model_tools_openai() -> str:
+    return model_gpt4
+

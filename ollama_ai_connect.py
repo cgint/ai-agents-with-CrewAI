@@ -25,3 +25,9 @@ def get_model_default_ollama() -> str:
     # return "openhermes:latest"
     # return "llama2:latest"
     return "mistral:latest"
+
+def get_model_tools_ollama() -> str:
+    return "openhermes:latest"
+    # return "llama2:latest"
+    # return "mistral:latest"
+

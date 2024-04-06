@@ -16,5 +16,8 @@ def llm_list_together() -> list[str]:
     ]
 
 def get_model_default_together() -> str:
+    return model_mistral_7B_instruct
+
+def get_model_tools_together() -> str:
     return model_openhermes
 

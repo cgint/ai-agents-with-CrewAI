@@ -34,3 +34,6 @@ def llm_list_openrouter() -> list[str]:
 def get_model_default_openrouter() -> str:
     return model_openai_4_turbo_preview
 
+def get_model_tools_openrouter() -> str:
+    return get_model_default_openrouter()
+

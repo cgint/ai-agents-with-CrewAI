@@ -41,7 +41,7 @@ from textwrap import dedent
 # URL: https://ollama.com/
 
 # You can choose to use a local model through Ollama for example. 
-from model_helper import get_llm, get_model_default, get_models
+from model_helper import get_llm, get_model_defaults, get_models
 
 # I have published a HowTo setup Ollama server that it works over the network
 # URL: https://ai-box.eu/top-story/ollama-ubuntu-installation-und-konfiguration/1191/
@@ -54,11 +54,12 @@ my_question="What about investing in 3M Company (stock ticker symbol 'MMM') ?"
 # my_question="What about investing in 3M Company ?"
 
 
-model_default = get_model_default()
+model_default, model_tools = get_model_defaults()
 model_names = None
 # Check if the request was successful
 model_names = get_models()
-default_id=model_names.index(model_default)
+model_default_id=model_names.index(model_default)
+model_tools_id=model_names.index(model_tools)
 
 if model_names is None:
     st.error("Failed to fetch data via 'get_models'.")
@@ -180,7 +181,7 @@ with tab1:
   st.subheader("Your research agent:")
 
   # Populate the dropdown box
-  model_researcher = st.selectbox('Select a LLM model for the researcher:', model_names, key="model_researcher", index=default_id)
+  model_researcher = st.selectbox('Select a LLM model for the researcher:', model_names, key="model_researcher", index=model_tools_id)
 
   # Create a slider to select the temperature of the llm
   temperature_researcher = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_researcher", min_value=0.0, max_value=1.0, step=0.01)
@@ -195,7 +196,7 @@ with tab1:
 with tab2:
   st.subheader("Your author agent:")
 
-  model_autor = st.selectbox('Select a LLM model for the autor:', model_names, key="model_autor", index=default_id)
+  model_autor = st.selectbox('Select a LLM model for the autor:', model_names, key="model_autor", index=model_default_id)
 
   # Create a slider to select the temperature of the llm
   temperature_autor = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_autor", min_value=0.0, max_value=1.0, step=0.01)
@@ -217,7 +218,7 @@ with tab3:
   # has an idea how to define such an agent.
   st.subheader("Your investor agent:")
 
-  model_consultant = st.selectbox('Select a LLM model for the agent:', model_names, key="model_consultant", index=default_id)
+  model_consultant = st.selectbox('Select a LLM model for the agent:', model_names, key="model_consultant", index=model_tools_id)
   # Create a slider to select the temperature of the llm
   temperature_consultant = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_consultant", min_value=0.0, max_value=1.0, step=0.01)
 
@@ -412,7 +413,7 @@ with tab0:
   st.title('Do my analysis')
   task_description = st.text_area('Your short task description here is used to re-write Task 1 - Task 3 so that they fit thematically with the new input.', value=my_question)
 
-  model_rewrite = st.selectbox('Select a LLM model for re-writing the tasks 1 - 3:', model_names, key="model_rewrite", index=default_id)
+  model_rewrite = st.selectbox('Select a LLM model for re-writing the tasks 1 - 3:', model_names, key="model_rewrite", index=model_default_id)
 
   # Create a slider to select the temperature of the llm
   temperature_rewrite_task = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', min_value=0.0, max_value=1.0, step=0.01)
