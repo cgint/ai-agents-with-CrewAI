@@ -1,9 +1,26 @@
-from langchain_openrouter import OpenRouterLLM
+from typing import Optional
+from langchain_core.language_models import BaseLanguageModel
+from langchain_community.chat_models.openai import ChatOpenAI
 import os
 
-def get_llm_openrouter(model_name: str, temperature: float, max_tokens: int):
-    return OpenRouterLLM(model=model_name, temperature=temperature, 
-                         max_tokens=max_tokens, api_key=os.getenv("OPENROUTER_API_KEY"))
+class ChatOpenRouter(ChatOpenAI):
+    openai_api_base: str
+    openai_api_key: str
+    model_name: str
+
+    def __init__(self,
+                 model_name: str,
+                 openai_api_key: Optional[str] = None,
+                 openai_api_base: str = "https://openrouter.ai/api/v1",
+                 **kwargs):
+        openai_api_key = openai_api_key or os.getenv('OPENROUTER_API_KEY')
+        super().__init__(openai_api_base=openai_api_base,
+                         openai_api_key=openai_api_key,
+                         model_name=model_name, **kwargs)
+        
+def get_llm_openrouter(model_name: str, temperature: float, max_tokens: int) -> BaseLanguageModel:
+    return ChatOpenRouter(model_name=model_name, openai_api_key=os.getenv("OPENROUTER_API_KEY"), 
+                         temperature=temperature, max_tokens=max_tokens)
 
 model_openhermes = "teknium/OpenHermes-2-Mistral-7B"
 model_mixtral_8x7B_instruct = "mistralai/mixtral-8x7b-instruct"
@@ -27,13 +44,14 @@ def llm_list_openrouter() -> list[str]:
         model_openai_35_turbo_instruct,
         model_openai_4_turbo_preview,
         model_anthropic_claude3_haiku,
+        model_anthropic_claude3_haiku_self_moderated,
         model_anthropic_claude3_sonnet,
         model_anthropic_claude3_opus
     ]
 
 def get_model_default_openrouter() -> str:
-    return model_openai_4_turbo_preview
+    return model_mistral_7B_20_instruct
 
 def get_model_tools_openrouter() -> str:
-    return get_model_default_openrouter()
+    return model_openhermes
 

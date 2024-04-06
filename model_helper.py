@@ -1,11 +1,12 @@
 from langchain_core.language_models import BaseLanguageModel
+from groq_connect import get_llm_groq, get_model_default_groq, get_model_tools_groq, get_models_groq
 from ollama_ai_connect import get_model_default_ollama, get_model_tools_ollama, get_models_ollama, get_llm_ollama
 from openrouter_connect import get_model_tools_openrouter, llm_list_openrouter, get_model_default_openrouter, get_llm_openrouter
 from together_ai_connect import get_model_tools_together, llm_list_together, get_llm_together, get_model_default_together
 from openai_connect import get_llm_openai, get_model_tools_openai, get_models_openai, get_model_default_openai
 
 from langsmith import traceable
-use_provider = "ollama"
+use_provider = "openrouter"
 
 @traceable
 def get_llm(model_name: str, temperature: float = 0.1, max_tokens: int = 1000) -> BaseLanguageModel:
@@ -17,6 +18,8 @@ def get_llm(model_name: str, temperature: float = 0.1, max_tokens: int = 1000) -
         return get_llm_together(model_name, temperature, max_tokens)
     elif use_provider == "ollama":
         return get_llm_ollama(model_name, temperature, max_tokens)
+    elif use_provider == "groq":
+        return get_llm_groq(model_name, temperature, max_tokens)
     else:
         raise ValueError(f"Unsupported provider: {use_provider}")
 
@@ -30,6 +33,8 @@ def get_models() -> list[str]:
         return llm_list_together()
     elif use_provider == "ollama":
         return get_models_ollama()
+    elif use_provider == "groq":
+        return get_models_groq()
     else:
         raise ValueError(f"Unsupported provider: {use_provider}")
 
@@ -43,6 +48,8 @@ def get_model_defaults() -> tuple[str, str]:
         return get_model_default_together(), get_model_tools_together()
     elif use_provider == "ollama":
         return get_model_default_ollama(), get_model_tools_ollama()
+    elif use_provider == "groq":
+        return get_model_default_groq(), get_model_tools_groq()
     else:
         raise ValueError(f"Unsupported provider: {use_provider}")
 

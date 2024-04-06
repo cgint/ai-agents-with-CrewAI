@@ -12,4 +12,5 @@ langchain-experimental
 langsmith
 duckduckgo-search
 unstructured
+openai
 
