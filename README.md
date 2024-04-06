@@ -7,7 +7,7 @@ Adaptations and some first tryouts using Crew.ai, LangChain, LangSmith, ...
 I also use it as a playground to try out function-calling with LangChain.
 Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Together.ai, Groq, Openrouter mostly for function-calling-capablities as the rest works fine usually.
 
-## Funciton Calling So far:
+## Function Calling So far:
 - Ollama-Openhermes performed on par with GPT-4
 - Ollama and Mistral, Mixtral, llama2, codellama and even nexusraven had lots of issues
 - Experimental [OllamaFunctions](https://python.langchain.com/docs/integrations/chat/ollama_functions/) did not work for me at all
