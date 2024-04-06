@@ -8,8 +8,10 @@ I also use it as a playground to try out function-calling with LangChain.
 Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Together.ai, Groq, Openrouter mostly for function-calling-capablities as the rest works fine usually.
 
 ## Function Calling So far:
-- Ollama-Openhermes performed on par with GPT-4
-- Ollama and Mistral, Mixtral, llama2, codellama and even nexusraven had lots of issues
+- OpenAI "gpt-4" did very well
+  - "gpt-4-0125-preview" and "gpt-3.5-turbo-instruct" did not work well - lots of syntax-errors on tool-calling
+- 'openhermes' on Ollama performed on par with GPT-4
+- Mistral, Mixtral, llama2, codellama and even nexusraven had lots of issues with tool-calling running on Ollama
 - Experimental [OllamaFunctions](https://python.langchain.com/docs/integrations/chat/ollama_functions/) did not work for me at all
   - Did not invest much time though - just wrapped the OllamaChat and tried out with Mistral, openhermes, Mixtral, ... Nothing worked. Even openhermes that did well without that wrapper :shrug:
 
