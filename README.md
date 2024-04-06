@@ -15,6 +15,119 @@ Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Toget
 - Experimental [OllamaFunctions](https://python.langchain.com/docs/integrations/chat/ollama_functions/) did not work for me at all
   - Did not invest much time though - just wrapped the OllamaChat and tried out with Mistral, openhermes, Mixtral, ... Nothing worked. Even openhermes that did well without that wrapper :shrug:
 
+### Together.ai
+Tests using `mistralai/Mixtral-8x7B-Instruct-v0.1` works fine. 
+
+Just some issue like this - did repeat for some time - i guess until 'max value for interations' reached - but the whole crew did finish.
+
+```
+Action: None
+Action Input: {} 
+
+Action 'None' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string') - Useful to search the internet about a a given topic and return relevant results
+DuckDuckGoSearch: DuckDuckGoSearch(query: 'string') - Search the web for information on a given topic
+```
+
+### Groq
+Tests using `mixtral-8x7b-32768` works fine.
+
+Just once the issue - but the whole crew did finish.
+```
+Action: Analyze Information
+Action Input: {'information': '3M Company recognized as Top 100 Global Innovator 2023, Clarivate has named 3M a Top 100 Global Innovator for 12 consecutive years, 3M Co\'s brand is synonymous with innovation and reliability, a reputation built over a century of operation.'}
+ 
+
+Action 'Analyze Information' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string') - Useful to search the internet about a a given topic and return relevant results
+DuckDuckGoSearch: DuckDuckGoSearch(query: 'string') - Search the web for information on a given topic
+Delegate work to co-worker: Delegate work to co-worker(coworker: str, task: str, context: str) - Delegate a specific task to one of the following co-workers: [Business Angel and venture capital consultant, Tech content autor]
+The input to this tool should be the coworker, the task you want them to do, and ALL necessary context to exectue the task, they know nothing about the task, so share absolute everything you know, don't reference things but instead explain them.
+Ask question to co-worker: Ask question to co-worker(coworker: str, question: str, context: str) - Ask a specific question to one of the following co-workers: [Business Angel and venture capital consultant, Tech content autor]
+The input to this tool should be the coworker, the question you have for them, and ALL necessary context to ask the question properly, they know nothing about the question, so share absolute everything you know, don't reference things but instead explain them.
+```
+
+### Openrouter.ai
+Tests with `teknium/OpenHermes-2-Mistral-7B`, `anthropic/claude-3-haiku`, `anthropic/claude-3-haiku:beta`, `anthropic/claude-3-sonnet`, `anthropic/claude-3-opus` worked flawless.
+
+Tests using `mistralai/mixtral-8x7b-instruct:nitro` works fine.
+
+Just some of these:
+```
+Action: Analyze Data
+
+Action Input: 
+{'links': ['https://www.wsj.com/market-data/quotes/TSLA/financials/annual/income-statement', 'https://www.wsj.com/market-data/quotes/TSLA/financials', 'https://www.sec.gov/Archives/edgar/data/1318605/000162828023034847/tsla-20230930.htm', 'https://finance.yahoo.com/quote/TSLA/financials/']}
+
+ 
+
+Action 'Analyze Data' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string') - Useful to search the internet about a a given topic and return relevant results
+DuckDuckGoSearch: DuckDuckGoSearch(query: 'string') - Search the web for information on a given topic
+Delegate work to co-worker: Delegate work to co-worker(coworker: str, task: str, context: str) - Delegate a specific task to one of the following co-workers: [Business Angel and venture capital consultant, Tech content autor]
+The input to this tool should be the coworker, the task you want them to do, and ALL necessary context to exectue the task, they know nothing about the task, so share absolute everything you know, don't reference things but instead explain them.
+Ask question to co-worker: Ask question to co-worker(coworker: str, question: str, context: str) - Ask a specific question to one of the following co-workers: [Business Angel and venture capital consultant, Tech content autor]
+The input to this tool should be the coworker, the question you have for them, and ALL necessary context to ask the question properly, they know nothing about the question, so share absolute everything you know, don't reference things but instead explain them.
+```
+
+Tests using `mistralai/mixtral-8x7b-instruct` lead to several of these:
+```
+Action: SearchTheInternet
+
+Action Input: {'query': 'Tesla stock price and trend over the past year'}
+
+Observ
+Error parsing Tool-Arguments: tool='SearchTheInternet' tool_input="{'query': 'Tesla stock price and trend over the past year'}\n\nObserv" log="\nThought: Apologies for the mistake. I need to provide the input as a dictionary with keys in quotes. I will correct the input and try again.\n\nAction: SearchTheInternet\n\nAction Input: {'query': 'Tesla stock price and trend over the past year'}\n\nObserv"
+
+Thought: It seems there is an issue with the `SearchTheInternet` action. I will try using the `DuckDuckGoSearch` action instead to find the current stock price and trend of Tesla.
+
+Action: DuckDuckGoSearch
+
+Action Input: {'query': 'Tesla stock price and trend over the past year'}
+
+Observ
+Error parsing Tool-Arguments: tool='DuckDuckGoSearch' tool_input="{'query': 'Tesla stock price and trend over the past year'}\n\nObserv" log="\nThought: It seems there is an issue with the `SearchTheInternet` action. I will try using the `DuckDuckGoSearch` action instead to find the current stock price and trend of Tesla.\n\nAction: DuckDuckGoSearch\n\nAction Input: {'query': 'Tesla stock price and trend over the past year'}\n\nObserv"
+
+Thought: It appears that there is an issue with both the `SearchTheInternet` and `DuckDuckGoSearch` actions. I will try to use a different approach by delegating this task to a coworker who might have more experience or access to better tools for this specific task. I will delegate the work to the Business Angel and venture capital consultant, as they might have access to financial databases and resources that can provide the required information.
+
+Action: Delegate work to co-worker
+
+Action Input: {'coworker': 'Business Angel and venture capital consultant', 'task': 'Find the current stock price and trend of Tesla over the past year.', 'context': 'I am analyzing Tesla Inc. (TSLA) for potential investment decisions. I need to know the current stock price and its trend over the past year to better understand the company’s financial situation.'}
+
+Observ
+Error parsing Tool-Arguments: tool='Delegate work to co-worker' tool_input="{'coworker': 'Business Angel and venture capital consultant', 'task': 'Find the current stock price and trend of Tesla over the past year.', 'context': 'I am analyzing Tesla Inc. (TSLA) for potential investment decisions. I need to know the current stock price and its trend over the past year to better understand the company’s financial situation.'}\n\nObserv" log="\nThought: It appears that there is an issue with both the `SearchTheInternet` and `DuckDuckGoSearch` actions. I will try to use a different approach by delegating this task to a coworker who might have more experience or access to better tools for this specific task. I will delegate the work to the Business Angel and venture capital consultant, as they might have access to financial databases and resources that can provide the required information.\n\nAction: Delegate work to co-worker\n\nAction Input: {'coworker': 'Business Angel and venture capital consultant', 'task': 'Find the current stock price and trend of Tesla over the past year.', 'context': 'I am analyzing Tesla Inc. (TSLA) for potential investment decisions. I need to know the current stock price and its trend over the past year to better understand the company’s financial situation.'}\n\nObserv"
+```
+
+Tests using `mistralai/mistral-7b-instruct:free` lead to several of these:
+```
+Action: SearchTheInternet
+Action Input: {
+"query": "Current stock price of Tesla (TSLA)"
+}
+
+Observ
+Error parsing Tool-Arguments: tool='SearchTheInternet' tool_input='{\n"query": "Current stock price of Tesla (TSLA)"\n}\n\nObserv' log='Action: SearchTheInternet\nAction Input: {\n"query": "Current stock price of Tesla (TSLA)"\n}\n\nObserv'
+Thought:
+Action: DuckDuckGoSearch
+Action Input: {
+"query": "Current stock price of Tesla (TSLA)"
+}
+
+Observ
+Error parsing Tool-Arguments: tool='DuckDuckGoSearch' tool_input='{\n"query": "Current stock price of Tesla (TSLA)"\n}\n\nObserv' log='Thought:\nAction: DuckDuckGoSearch\nAction Input: {\n"query": "Current stock price of Tesla (TSLA)"\n}\n\nObserv'
+Thought:
+Action: Delegate work to co-worker
+Action Input:
+Error parsing Tool-Arguments: tool='Delegate work to co-worker' tool_input='' log='Thought:\nAction: Delegate work to co-worker\nAction Input:'
+Thought:
+Action: Ask question to co-worker
+Action Input: {
+"coworker": "Business Angel and venture capital consultant",
+"question": "What is the current stock price of Tesla (TSLA)?",
+"context": "Please provide the current stock price of Tesla (TSLA) and any relevant information about its trend over the past year."
+}
+
+Observ
+Error parsing Tool-Arguments: tool='Ask question to co-worker' tool_input='{\n"coworker": "Business Angel and venture capital consultant",\n"question": "What is the current stock price of Tesla (TSLA)?",\n"context": "Please provide the current stock price of Tesla (TSLA) and any relevant information about its trend over the past year."\n}\n\nObserv' log='Thought:\nAction: Ask question to co-worker\nAction Input: {\n"coworker": "Business Angel and venture capital consultant",\n"question": "What is the current stock price of Tesla (TSLA)?",\n"context": "Please provide the current stock price of Tesla (TSLA) and any relevant information about its trend over the past year."\n}\n\nObserv'
+```
+
 
 # The rest of the README of from the original repo of 'Ingmar Stapel'
 
