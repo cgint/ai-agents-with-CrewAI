@@ -1,4 +1,5 @@
 import json
+from langsmith import traceable
 
 import requests
 import streamlit as st
@@ -7,10 +8,12 @@ from langchain.tools import tool
 
 class SearchTools():
 
-  @tool("Search the internet")
+  @tool("SearchTheInternet")
+  @traceable
   def search_internet(query):
     """Useful to search the internet
     about a a given topic and return relevant results"""
+
     top_result_to_return = 4
     url = "https://google.serper.dev/search"
     payload = json.dumps({"q": query})
@@ -19,9 +22,10 @@ class SearchTools():
         'content-type': 'application/json'
     }
     response = requests.request("POST", url, headers=headers, data=payload)
+    tool_answer = ""
     # check if there is an organic key
     if 'organic' not in response.json():
-      return "Sorry, I couldn't find anything about that, there could be an error with you serper api key."
+      tool_answer = "Sorry, I couldn't find anything about that, there could be an error with you serper api key."
     else:
       results = response.json()['organic']
       string = []
@@ -34,4 +38,5 @@ class SearchTools():
         except KeyError:
           next
 
-      return '\n'.join(string)
+      tool_answer = '\n'.join(string)
+    return tool_answer

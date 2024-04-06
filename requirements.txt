@@ -1,0 +1,15 @@
+requests
+crewai
+crewai-tools
+streamlit
+langchain
+langchain-community
+langchain-together
+langchain-openrouter
+langchain-openai
+langchain-groq
+langchain-experimental
+langsmith
+duckduckgo-search
+unstructured
+

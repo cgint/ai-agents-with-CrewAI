@@ -1,13 +1,22 @@
+# Adaptations and some first tryouts using Crew.ai, LangChain, LangSmith
+# Also a playground to try out function-calling with LangChain and also
+# different LLM-"Runtimes" like OpenAI, Ollama-locally, Together.ai.
+#
+# Funciton Calling So far:
+#   Ollama-Openhermes performed on par with GPT-4
+#   Ollama and Mistral, Mixtral, llama2, codellama and even nexusraven had lots of issues
+
+# Based on work from
+# https://github.com/custom-build-robots/ai-agents-with-CrewAI
 # Autor:    Ingmar Stapel
 # Datum:    20240330
 # Version:  1.0
 # Homepage: https://ai-box.eu/
 
-import os
-import json
-import requests
-from crewai import Agent, Task, Crew, Process
+from uuid import uuid4
+from crewai import Agent, Task, Crew
 from crewai_tools import tool
+from langsmith import RunTree, traceable
 import streamlit as st
 import datetime
 from langchain.prompts import PromptTemplate
@@ -32,26 +41,29 @@ from textwrap import dedent
 # URL: https://ollama.com/
 
 # You can choose to use a local model through Ollama for example. 
-from langchain_community.llms import Ollama
-
-
-# The URL below shows the API endpoint and lists all available LLMs hosted by 
-# the Ollama server you are running on-prem.
-# Please change the IP-address for you Ollama server.
-json_url = "http://192.168.2.57:11434/api/tags"
-local_base_url="http://192.168.2.57:11434"
+from model_helper import get_llm, get_model_default, get_models
 
 # I have published a HowTo setup Ollama server that it works over the network
 # URL: https://ai-box.eu/top-story/ollama-ubuntu-installation-und-konfiguration/1191/
 
 # This configures the ollama_llm which will be used by our agents later.
-ollama_llm = Ollama(model="openhermes", base_url=local_base_url)
 
 
-# Install duckduckgo-search for this example:
-# !pip install -U duckduckgo-search
-from langchain_community.tools import DuckDuckGoSearchRun
-search_tool = DuckDuckGoSearchRun()
+my_question="What about investing in 3M Company (stock ticker symbol 'MMM') ?"
+# my_question="What about investing in 3M Company (MMM) ?"
+# my_question="What about investing in 3M Company ?"
+
+
+model_default = get_model_default()
+model_names = None
+# Check if the request was successful
+model_names = get_models()
+default_id=model_names.index(model_default)
+
+if model_names is None:
+    st.error("Failed to fetch data via 'get_models'.")
+
+
 
 from tools.search_tools import SearchTools
 
@@ -62,15 +74,57 @@ tab0, tab4, tab1, tab3, tab2 = st.tabs(["Main: ", "The tasks", "Researcher: ", "
 task_value_1 = "empty"
 task_value_2 = "empty"
 task_value_3 = "empty"
-# Fetch JSON data from the URL with the model names
-response = requests.get(json_url)
+
+run_id = uuid4()
+rt: RunTree = RunTree(
+    session_name="ai-agents-with-CrewAI",
+    name="ai-agents-with-CrewAI",
+    run_type="start",
+    inputs={"model_default": model_default},
+    id=run_id
+)
+
+import atexit
+
+def finish_tracing():
+    rt.end()
+    rt.post()
+
+atexit.register(finish_tracing)
 
 
 # This is more or less a work around that hopefully will work for the dd_search.
+@tool("SearchTheInternet")
+@traceable
+def search_search(query: str):
+    """Useful to search the internet about a a given topic and return relevant results"""
+    s = rt.create_child(
+        name="SearchTheInternet",
+        run_type="tool",
+        inputs={"query": query}
+    )
+    search_result: str = SearchTools.search_internet(query)
+    s.end(outputs={'search_result': search_result})
+    s.post()
+    return search_result
+
+# This is more or less a work around that hopefully will work for the dd_search.
 @tool('DuckDuckGoSearch')
-def dd_search(search_query: str):
+@traceable
+def dd_search(query: str):
     """Search the web for information on a given topic"""
-    return DuckDuckGoSearchRun().run(search_query)
+    # Install duckduckgo-search for this example:
+    # !pip install -U duckduckgo-search
+    from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+    s = rt.create_child(
+        name="DuckDuckGoSearch",
+        run_type="tool",
+        inputs={"query": query}
+    )
+    search_result: str = DuckDuckGoSearchRun().run(query)
+    s.end(outputs={'search_result': search_result})
+    s.post()
+    return search_result
 
 # To display what the agents are currently doing this streamlit_callback function is needed.
 def streamlit_callback(step_output):
@@ -121,31 +175,18 @@ if "text_task_in2" not in st.session_state:
 if "text_task_in3" not in st.session_state:
     st.session_state.text_task_in3 = None
 
-# Start with the design and building up the functionality of the web-app.
-# The architecture and technical design of the web-app is not very nice.
-# Feel free to optimize that.
+
 with tab1:
   st.subheader("Your research agent:")
 
-  # Check if the request was successful
-  if response.status_code == 200:
-      # Parse the JSON response
-      data = response.json()
-
-      # Extract the model names from the JSON response
-      names = [model["name"] for model in data["models"]]
-
-      default_id=names.index("openhermes:latest")
-      # Populate the dropdown box
-      model_researcher = st.selectbox('Select a LLM model for the researcher:', names, key="model_researcher", index=default_id)
-  else:
-      st.error(f"Failed to fetch data from {json_url}. Error code: {response.status_code}")
+  # Populate the dropdown box
+  model_researcher = st.selectbox('Select a LLM model for the researcher:', model_names, key="model_researcher", index=default_id)
 
   # Create a slider to select the temperature of the llm
   temperature_researcher = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_researcher", min_value=0.0, max_value=1.0, step=0.01)
 
   max_iterations_researcher = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_researcher", index=2)
-  ollama_llm_researcher = Ollama(model=model_researcher, base_url=local_base_url, temperature=temperature_researcher)
+  ollama_llm_researcher = get_llm(model_researcher, temperature_researcher)
 
   role_researcher = st.text_area('role:','Senior research analyst', key="role_researcher", height=20)
   goal_researcher = st.text_area('goal:', 'As a Senior Research Analyst, you play a key role in analyzing data to offer strategic insights for decision-making. This requires strong analytical skills, critical thinking, and industry knowledge.', key="goal_researcher", height=200)
@@ -154,25 +195,13 @@ with tab1:
 with tab2:
   st.subheader("Your author agent:")
 
-  # Check if the request was successful
-  if response.status_code == 200:
-      # Parse the JSON response
-      data = response.json()
-
-      # Extract the model names from the JSON response
-      names = [model["name"] for model in data["models"]]
-
-      default_id=names.index("mistral:latest")
-      # Populate the dropdown box
-      model_autor = st.selectbox('Select a LLM model for the autor:', names, key="model_autor", index=default_id)
-  else:
-      st.error(f"Failed to fetch data from {json_url}. Error code: {response.status_code}")
+  model_autor = st.selectbox('Select a LLM model for the autor:', model_names, key="model_autor", index=default_id)
 
   # Create a slider to select the temperature of the llm
   temperature_autor = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_autor", min_value=0.0, max_value=1.0, step=0.01)
 
   max_iterations_autor = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_autor", index=2)
-  ollama_llm_autor = Ollama(model=model_autor, base_url=local_base_url, temperature=temperature_autor)
+  ollama_llm_autor = get_llm(model_autor, temperature_autor)
 
 
   role_autor = st.text_area('role:','Tech content autor', key="role_autor", height=20)
@@ -188,20 +217,7 @@ with tab3:
   # has an idea how to define such an agent.
   st.subheader("Your investor agent:")
 
-  # Check if the request was successful an the ollama server is responding.
-  if response.status_code == 200:
-      # Parse the JSON response
-      data = response.json()
-
-      # Extract the model names from the JSON response generated by the ollama server
-      names = [model["name"] for model in data["models"]]
-
-      # Populate the dropdown box with the available models. Set openhermes as default.
-      default_id=names.index("openhermes:latest")
-      model_consultant = st.selectbox('Select a LLM model for the agent:', names, key="model_consultant", index=default_id)
-  else:
-      st.error(f"Failed to fetch data from {json_url}. Error code: {response.status_code}")
-
+  model_consultant = st.selectbox('Select a LLM model for the agent:', model_names, key="model_consultant", index=default_id)
   # Create a slider to select the temperature of the llm
   temperature_consultant = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_consultant", min_value=0.0, max_value=1.0, step=0.01)
 
@@ -209,7 +225,7 @@ with tab3:
   max_iterations_consultant = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_consultant", index=2)
   
   # Define the llm call for the ollama server we like to use for our agent  
-  ollama_llm_consultant = Ollama(model=model_consultant, base_url=local_base_url, temperature=temperature_consultant)
+  ollama_llm_consultant = get_llm(model_consultant, temperature_consultant)
 
   # Define now our agent
   role_consultant = st.text_area('role:','Business Angel and venture capital consultant', key="role_consultant", height=20)
@@ -388,53 +404,42 @@ References:
 - Sources of information used in the report.                          
 Today is the """)+str(datetime.date.today())+""" .""", key="text_task_in_3")
 
-  task_in_1_new = st.session_state.text_task_in1
-  task_in_2_new = st.session_state.text_task_in2
-  task_in_3_new = st.session_state.text_task_in3 
+  task_in_1_new = st.session_state.text_task_in1 if "text_task_in1" in st.session_state else None
+  task_in_2_new = st.session_state.text_task_in2 if "text_task_in2" in st.session_state else None
+  task_in_3_new = st.session_state.text_task_in3 if "text_task_in3" in st.session_state else None 
 
 with tab0:
   st.title('Do my analysis')
-  task_description = st.text_area('Your short task description here is used to re-write Task 1 - Task 3 so that they fit thematically with the new input.') 
+  task_description = st.text_area('Your short task description here is used to re-write Task 1 - Task 3 so that they fit thematically with the new input.', value=my_question)
 
-  # Check if the request was successful
-  if response.status_code == 200:
-      # Parse the JSON response
-      data = response.json()
+  model_rewrite = st.selectbox('Select a LLM model for re-writing the tasks 1 - 3:', model_names, key="model_rewrite", index=default_id)
 
-      # Extract the model names from the JSON response
-      names = [model["name"] for model in data["models"]]
-
-      # Populate the dropdown box
-      default_id=names.index("openhermes:latest")
-      model_rewrite = st.selectbox('Select a LLM model for re-writing the tasks 1 - 3:', names, key="model_rewrite", index=default_id)
-  else:
-      st.error(f"Failed to fetch data from {json_url}. Error code: {response.status_code}")
   # Create a slider to select the temperature of the llm
   temperature_rewrite_task = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', min_value=0.0, max_value=1.0, step=0.01)
 
   if st.button('Start Generation NOW'):
     with st.status("🤖 **Now rewriting the tasks for your three agents...**", state="running", expanded=True) as status:
-          ollama_llm_rewrite_task = Ollama(model=model_rewrite, base_url=local_base_url, temperature=temperature_rewrite_task)
+          ollama_llm_rewrite_task = get_llm(model_rewrite, temperature_rewrite_task)
 
           template_task_1 = "As an AI assistant please write a task description for an AI agent whos role is to be a researcher who like to understand various topics. This is an example task description for an AI agent. The AI agent needs this task to understand what he has to do. \n Example task description:\n" + st.session_state.text_task_in1 + "\n Please rewrite this task description for the new topic which is described as follows: \n New topic: \n{task_description} \nImportant for the rewritten new task description is to keep the structure of the example task description provided."
           prompt_task_1 = PromptTemplate(template=template_task_1, input_variables=["task_description"])
           llm_chain = LLMChain(prompt=prompt_task_1, llm=ollama_llm_rewrite_task)
-          task_in_1_new = llm_chain.run({"task_description": task_description})
+          task_in_1_new: str = llm_chain.run({"task_description": task_description})
 
           template_task_3 = "As an AI assistant please write a task description for an AI agent whos role is an business angle investor who does analysis. This is an example task description for an AI agent. The AI agent needs this task to understand what he has to do. \n Example task description:\n" + st.session_state.text_task_in3 + "\n Please rewrite this task description for the new topic which is described as follows: \n New topic: \n{task_description} \nImportant for the rewritten new task description is to keep the structure of the example task description provided."
           prompt_task_3 = PromptTemplate(template=template_task_3, input_variables=["task_description"])
           llm_chain = LLMChain(prompt=prompt_task_3, llm=ollama_llm_rewrite_task)
-          task_in_3_new = llm_chain.run({"task_description": task_description})
+          task_in_3_new: str = llm_chain.run({"task_description": task_description})
 
           template_task_2 = "As an AI assistant please write a task description for an AI agent whos role is to be an autor who likes to write articles. This is an example task description for an AI agent. The AI agent needs this task to understand what he has to do. \n Example task description:\n" + st.session_state.text_task_in2 + "\n Please rewrite this task description for the new topic which is described as follows: \n New topic: \n{task_description} \nImportant for the rewritten new task description is to keep the structure of the example task description provided."
           prompt_task_2 = PromptTemplate(template=template_task_2, input_variables=["task_description"])
           llm_chain = LLMChain(prompt=prompt_task_2, llm=ollama_llm_rewrite_task)
-          task_in_2_new = llm_chain.run({"task_description": task_description})
+          task_in_2_new: str = llm_chain.run({"task_description": task_description})
 
 
-          st.text_area('Task 1 Researcher rewritten:', task_in_1_new, key="text_task_in_1_re")
-          st.text_area('Task 3 Business Angel rewritten:', task_in_3_new, key="text_task_in_3_re")
-          st.text_area('Task 2 Autor / Writer rewritten:', task_in_2_new, key="text_task_in_2_re")
+          st.text_area('Task 1 Researcher rewritten:', task_in_1_new.strip(), key="text_task_in_1_re")
+          st.text_area('Task 3 Business Angel rewritten:', task_in_3_new.strip(), key="text_task_in_3_re")
+          st.text_area('Task 2 Autor / Writer rewritten:', task_in_2_new.strip(), key="text_task_in_2_re")
 
     # Define your agents with roles and goals
     researcher = Agent(
@@ -446,7 +451,7 @@ with tab0:
       verbose=True,
       allow_delegation=True,
       tools=[
-          SearchTools.search_internet,
+         search_search,
           dd_search,
       ],
       llm=ollama_llm_researcher, 
@@ -462,7 +467,7 @@ with tab0:
       verbose=True,
       allow_delegation=False,
       tools=[
-          SearchTools.search_internet,
+          search_search,
           dd_search,
       ],
       llm=ollama_llm_consultant, 
@@ -507,6 +512,7 @@ with tab0:
             agents=[researcher, consultant, autor],
             tasks=[task1, task3, task2],
             verbose=2, # You can set it to 1 or 2 to different logging levels
+            # memory=True # uses OpenAI Embeddings by default - can be configured - see https://docs.crewai.com/core-concepts/Memory/#example-configuring-memory-for-a-crew
           )
           result = crew.kickoff()
         status.update(label="✅ Research activity finished!",
