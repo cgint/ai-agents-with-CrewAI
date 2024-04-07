@@ -19,6 +19,7 @@ Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Toget
 ### General learnings regarding function calling
 - Adding the type of the tool input-parameter (e.g. `def dd_search(query: str):`) lead to less 'irritations' in json returned by the LLM when it comes to name of input-param and also json-format
   - I did not do extensive testing on this though. So it can very well just be the usual small-change/large-effect when prompting LLMs.
+
 ### General function calling issues seen throughout all models and providers
 ```
 Action 'DuckDuckGoSearch(query: 'Tesla Company financial performance')' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string') - Useful to search the internet about a a given topic and return relevant results
@@ -29,7 +30,6 @@ I would think that this could be addressed by Crew.ai to 'allow' that ? Alhough 
 Also I am not sure how much the type-declaration `query: 'string'` is misleading models to think the format is requested like that :shrug:. Further tests show that adding the type actually made things clearer and i saw less 'irritation' e.g. on the parameter-name. When not give names like 'topic' were found in the json returned by the LLM to search the internet although 'query' would be the param-name.
 
 A quick test using `llama2-70b-4096 on Groq` changed the way the tool-call was attempted but still the wrong way - pure string instead of dict.
-
 
 ### Together.ai
 Tests using `mistralai/Mixtral-8x7B-Instruct-v0.1` works fine. 
