@@ -1,3 +1,5 @@
+[_TOC_]
+
 # Based on work from 'Ingmar Stapel'
 https://github.com/custom-build-robots/ai-agents-with-CrewAI
 
@@ -15,6 +17,21 @@ Additionally testing different LLM-"Runtimes" like OpenAI, Ollama-locally, Toget
 - Experimental [OllamaFunctions](https://python.langchain.com/docs/integrations/chat/ollama_functions/) did not work for me at all
   - Did not invest much time though - just wrapped the OllamaChat and tried out with Mistral, openhermes, Mixtral, ... Nothing worked. Even openhermes that did well without that wrapper :shrug:
 
+### General learnings regarding function calling
+- Adding the type of the tool input-parameter (e.g. `def dd_search(query: str):`) lead to less 'irritations' in json returned by the LLM when it comes to name of input-param and also json-format
+  - I did not do extensive testing on this though. So it can very well just be the usual small-change/large-effect when prompting LLMs.
+### General function calling issues seen throughout all models and providers
+```
+Action 'DuckDuckGoSearch(query: 'Tesla Company financial performance')' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string') - Useful to search the internet about a a given topic and return relevant results
+```
+
+I would think that this could be addressed by Crew.ai to 'allow' that ? Alhough I understand that starting to implement special cases will actually lead no where in the long run.
+
+Also I am not sure how much the type-declaration `query: 'string'` is misleading models to think the format is requested like that :shrug:. Further tests show that adding the type actually made things clearer and i saw less 'irritation' e.g. on the parameter-name. When not give names like 'topic' were found in the json returned by the LLM to search the internet although 'query' would be the param-name.
+
+A quick test using `llama2-70b-4096 on Groq` changed the way the tool-call was attempted but still the wrong way - pure string instead of dict.
+
+
 ### Together.ai
 Tests using `mistralai/Mixtral-8x7B-Instruct-v0.1` works fine. 
 
@@ -31,7 +48,7 @@ DuckDuckGoSearch: DuckDuckGoSearch(query: 'string') - Search the web for informa
 ### Groq
 Tests using `mixtral-8x7b-32768` works fine.
 
-Just once the issue - but the whole crew did finish.
+Just some of issue issues - but the whole crew did finish. Sometimes lead to hitting rate-limit due to rethinking on these errors I would imaging.
 ```
 Action: Analyze Information
 Action Input: {'information': '3M Company recognized as Top 100 Global Innovator 2023, Clarivate has named 3M a Top 100 Global Innovator for 12 consecutive years, 3M Co\'s brand is synonymous with innovation and reliability, a reputation built over a century of operation.'}
@@ -43,6 +60,18 @@ Delegate work to co-worker: Delegate work to co-worker(coworker: str, task: str,
 The input to this tool should be the coworker, the task you want them to do, and ALL necessary context to exectue the task, they know nothing about the task, so share absolute everything you know, don't reference things but instead explain them.
 Ask question to co-worker: Ask question to co-worker(coworker: str, question: str, context: str) - Ask a specific question to one of the following co-workers: [Business Angel and venture capital consultant, Tech content autor]
 The input to this tool should be the coworker, the question you have for them, and ALL necessary context to ask the question properly, they know nothing about the question, so share absolute everything you know, don't reference things but instead explain them.
+
+Action '** DuckDuckGoSearch(query: 'Tesla Company analysis')
+**' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string')
+```
+
+Tests using `gemma-7b-it` works ... BUT not a single function call is done :wink:
+
+Tests using `llama2-70b-4096` hitting rate-limit due to calling lots of unavailable actions. A lot of delegation action-requests were not available
+```
+Action 'Delegate work to co-worker(coworker: 'Business Angel and venture capital consultant', task: 'Analyze Tesla Company's financial performance and provide a detailed report', context: 'Please provide a detailed analysis of Tesla Company's financial performance, including revenue, net income, market capitalization, and any other relevant financial metrics. Additionally, please provide an assessment of the company's leadership and management team, their strategy, and their ability to execute on their vision.')' don't exist
+
+Action 'DuckDuckGoSearch(query: 'Tesla Company financial performance')' don't exist, these are the only available Actions: SearchTheInternet: SearchTheInternet(query: 'string') - Useful to search the internet about a a given topic and return relevant results
 ```
 
 ### Openrouter.ai
