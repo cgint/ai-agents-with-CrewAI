@@ -6,7 +6,7 @@ from together_ai_connect import get_model_tools_together, llm_list_together, get
 from openai_connect import get_llm_openai, get_model_tools_openai, get_models_openai, get_model_default_openai
 
 from langsmith import traceable
-use_provider = "openrouter"
+use_provider = "unset"
 
 @traceable
 def get_llm(model_name: str, temperature: float = 0.1, max_tokens: int = 1000) -> BaseLanguageModel:

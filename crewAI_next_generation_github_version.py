@@ -18,10 +18,8 @@ from crewai import Agent, Task, Crew
 from crewai_tools import tool
 from langsmith import RunTree, traceable
 import streamlit as st
-import datetime
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
-from textwrap import dedent
 
 # Source
 # The following GitHub repo helped me alot to build this app
@@ -42,6 +40,7 @@ from textwrap import dedent
 
 # You can choose to use a local model through Ollama for example. 
 from model_helper import get_llm, get_model_defaults, get_models
+from tasks import get_task_desc_autor, get_task_desc_business_angel, get_task_desc_researcher
 
 # I have published a HowTo setup Ollama server that it works over the network
 # URL: https://ai-box.eu/top-story/ollama-ubuntu-installation-und-konfiguration/1191/
@@ -49,10 +48,13 @@ from model_helper import get_llm, get_model_defaults, get_models
 # This configures the ollama_llm which will be used by our agents later.
 
 
-my_question="What about investing in 3M Company (stock ticker symbol 'MMM') ?"
+# my_question="What about investing in 3M Company (stock ticker symbol 'MMM') ?"
 # my_question="What about investing in 3M Company (MMM) ?"
 # my_question="What about investing in 3M Company ?"
-
+my_question="What about investing in Tesla Company (stock ticker symbol 'TSLA') ?"
+import model_helper
+# available providers: "openai", "openrouter", "together", "ollama", "groq"
+model_helper.use_provider = "ollama"
 
 model_default, model_tools = get_model_defaults()
 model_names = None
@@ -76,37 +78,20 @@ task_value_1 = "empty"
 task_value_2 = "empty"
 task_value_3 = "empty"
 
-run_id = uuid4()
-rt: RunTree = RunTree(
-    session_name="ai-agents-with-CrewAI",
-    name="ai-agents-with-CrewAI",
-    run_type="start",
-    inputs={"model_default": model_default},
-    id=run_id
-)
-
-import atexit
-
-def finish_tracing():
-    rt.end()
-    rt.post()
-
-atexit.register(finish_tracing)
-
 
 # This is more or less a work around that hopefully will work for the dd_search.
 @tool("SearchTheInternet")
 @traceable
 def search_search(query: str):
     """Useful to search the internet about a a given topic and return relevant results"""
-    s = rt.create_child(
-        name="SearchTheInternet",
-        run_type="tool",
-        inputs={"query": query}
-    )
+    # s = rt.create_child(
+    #     name="SearchTheInternet",
+    #     run_type="tool",
+    #     inputs={"query": query}
+    # )
     search_result: str = SearchTools.search_internet(query)
-    s.end(outputs={'search_result': search_result})
-    s.post()
+    # s.end(outputs={'search_result': search_result})
+    # s.post()
     return search_result
 
 # This is more or less a work around that hopefully will work for the dd_search.
@@ -117,14 +102,14 @@ def dd_search(query: str):
     # Install duckduckgo-search for this example:
     # !pip install -U duckduckgo-search
     from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
-    s = rt.create_child(
-        name="DuckDuckGoSearch",
-        run_type="tool",
-        inputs={"query": query}
-    )
+    # s = rt.create_child(
+    #     name="DuckDuckGoSearch",
+    #     run_type="tool",
+    #     inputs={"query": query}
+    # )
     search_result: str = DuckDuckGoSearchRun().run(query)
-    s.end(outputs={'search_result': search_result})
-    s.post()
+    # s.end(outputs={'search_result': search_result})
+    # s.post()
     return search_result
 
 # To display what the agents are currently doing this streamlit_callback function is needed.
@@ -186,7 +171,7 @@ with tab1:
   # Create a slider to select the temperature of the llm
   temperature_researcher = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_researcher", min_value=0.0, max_value=1.0, step=0.01)
 
-  max_iterations_researcher = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_researcher", index=2)
+  max_iterations_researcher = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_researcher", index=1)
   ollama_llm_researcher = get_llm(model_researcher, temperature_researcher)
 
   role_researcher = st.text_area('role:','Senior research analyst', key="role_researcher", height=20)
@@ -201,7 +186,7 @@ with tab2:
   # Create a slider to select the temperature of the llm
   temperature_autor = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_autor", min_value=0.0, max_value=1.0, step=0.01)
 
-  max_iterations_autor = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_autor", index=2)
+  max_iterations_autor = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_autor", index=1)
   ollama_llm_autor = get_llm(model_autor, temperature_autor)
 
 
@@ -223,7 +208,7 @@ with tab3:
   temperature_consultant = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_consultant", min_value=0.0, max_value=1.0, step=0.01)
 
   # Set the max value how long an agent is allowed to interate.
-  max_iterations_consultant = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_consultant", index=2)
+  max_iterations_consultant = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_consultant", index=1)
   
   # Define the llm call for the ollama server we like to use for our agent  
   ollama_llm_consultant = get_llm(model_consultant, temperature_consultant)
@@ -238,172 +223,9 @@ with tab3:
 with tab4:
   st.subheader("The agent tasks:")
 
-  st.session_state.text_task_in1 = st.text_area('Task 1 Researcher:', 
-                                                dedent(f"""Conduct a comprehensive analysis of the latest high performing startups active in the 
-field of generative AI. It is important that those startups with their advancements in 
-generative AI are active in the finance sector since a year. Identify key startups, 
-breakthrough technologies, and potential fast growing startups with impact in the finance 
-sector caused by generative AI. As a researcher you analyse how generative AI will change 
-the finance industry. It would be good to know if that startup is still searching for money 
-investments actively. Your final answer MUST be a full analysis report.
-Example Report: 
-    Finance Tech Startup Research Table: 
-    - Startup 1: 
-        - Name: "Kern AI" 
-        - Investment sum: 1.00.00.000 
-        - Founded in: 2022 
-        - Number of Employees: 50 
-        - Company homepage: https://www.kern.ai/ 
-    - Startup 2: 
-        - Name: "Scrub AI" 
-        - Investment sum: 5.00.00.000 
-        - Founded in: 2023 
-        - Number of Employees: 22 
-        - Company homepage: https://scrub-ai.com/
-Today is the """)+str(datetime.date.today())+""" .""", key="text_task_in_1")
-
-  st.session_state.text_task_in2 = st.text_area('Task 2 Autor / Writer:',
-                                                dedent(f"""Using the insights provided, write an article like an engaging blog post that highlights the most significant startups 
-active in generative AI with important advancements in this field. Your written article should be informative yet accessible, catering to a tech-savvy startup scene and 
-audience. Make it sound cool, avoid complex words so it doesn't sound like AI. Your final answer MUST be the a full structures blog post 
-The article you are writing has a minimum of 1600 words and highlights 10 startups. In the summary please list the startups with web addresses like url's headlines and bullet points for easy reading. 
-The text itself is enriched with nice emojis to highlight important parts.
-                                                       
-The structure of the article you have to write could look like the example below: 
-                                                       
-Example article structure:
-    Executive Summary: 
-    - Overview of the AI startup's performance. 
-    - Key financial metrics and achievements. 
-    - Future growth prospects. 
-    - Introduction: 
-    - Brief background of the AI startup. 
-    - Mission and objectives. 
-    - Market Analysis: 
-    - Analysis of the AI market segment. 
-    - Growth trends and opportunities. 
-    - Competitive landscape. 
-    - Business Model: 
-        - Description of the AI startup's business model. 
-        - Revenue streams. 
-        - Cost structure. 
-    - Financial Performance: 
-        - Revenue analysis: 
-        - Revenue growth over time. 
-    - Revenue sources (e.g., product sales, subscriptions, services). 
-        - Profitability analysis: 
-        - Gross profit margin. 
-        - Operating profit margin. 
-        - Net profit margin. 
-    - Cash flow analysis: 
-        - Operating cash flow. 
-        - Investing cash flow. 
-        - Financing cash flow. 
-    - Balance sheet analysis: 
-        - Assets composition. 
-        - Liabilities and equity. 
-    - Key financial ratios: 
-        - Return on Investment (ROI). 
-        - Return on Equity (ROE). 
-        - Debt-to-Equity ratio. 
-        - Current ratio. 
-        - Quick ratio. 
-    - Investment Analysis: 
-        - Valuation: 
-            - Methods used (e.g., Discounted Cash Flow, Comparable Company Analysis). 
-            - Assumptions and inputs. 
-    - Investment risks: 
-        - Market risks. 
-        - Technology risks. 
-        - Regulatory risks. 
-    - Strategic Initiatives: 
-        - Expansion plans. 
-        - Research and development efforts. 
-        - Strategic partnerships. 
-    - Conclusion: 
-        - Summary of key findings. 
-        - Recommendations for investors. 
-        - Future outlook. 
-    - Appendix: 
-        - Detailed financial tables. 
-        - Glossary of financial terms. 
-        - References: 
-    - Sources of information used in the report. \nToday is the: """) +str(datetime.date.today())+""" .""", key="text_task_in_2")
-
-  st.session_state.text_task_in3 = st.text_area('Task 3 Business Angel:', dedent(f"""Involve evaluating investment opportunities, conducting due diligence 
-on potential ventures, and advising startups on strategy, fundraising, and growth tactics. Search how much venture capital each startup already raised. 
-Add a comment if an future investment would be an option for an investor. Only from interest are startups in finance sector which are active over the last 
-year and this year. Additionally, they often facilitate connections between entrepreneurs and potential investors, leveraging their network to bridge the 
-gap between promising startups and capital sources. 
-Executive Summary:
-- Concise overview of the investment opportunity.
-- Highlights of key figures and decision points.
-- Summary of investment recommendations.
-Introduction:
-- Introduction to the company or opportunity being presented.
-- Purpose of the report.
-- Scope and methodology.
-Market Analysis:
-    - Market overview:
-        - Size, growth rate, and trends.
-        - Market segmentation.
-    - Competitive landscape:
-        - Major players and market share.
-        - Competitive advantages of the company.
-Business Model:
-- Description of the company's business model.
-- Revenue streams and sources.
-- Cost structure and scalability.
-Financial Performance:
-    - Revenue analysis:
-        - Historical revenue trends.
-        - Forecasted revenue growth.
-    - Profitability analysis:
-        - Gross margin, operating margin, net margin.
-    - Cash flow analysis:
-        - Operating cash flow, free cash flow.
-    - Key financial ratios:
-        - Return on Investment (ROI), Return on Equity (ROE), Debt-to-Equity ratio, etc.
-Investment Thesis:
-
-Investment opportunity:
-    - Value proposition.
-    - Unique selling points.
-    - Potential returns:
-        - Expected ROI.
-        - Risk-adjusted returns.
-    - Risks and Mitigation Strategies:
-
-    - Identification of potential risks:
-        - Market risks, operational risks, regulatory risks, etc.
-    - Mitigation strategies:
-        - Plans to address identified risks.
-    - Strategic Growth Initiatives:
-Expansion plans:
-    - Geographic expansion, product diversification, etc.
-Research and development:
-    - Innovation pipeline and investments.
-Strategic partnerships:
-    - Alliances, joint ventures, collaborations.
-Valuation:
-    Valuation methodology:
-        - Discounted Cash Flow (DCF), Comparable Company Analysis (CCA), etc.
-        - Valuation assumptions and inputs.
-Investment Recommendations:
-    - Summary of key findings and analysis.
-Investment decision:
-    - Buy, sell, hold recommendations.
-    - Justification of recommendations.
-Conclusion:
-    - Summary of the investment opportunity.
-    - Closing remarks.
-Appendix:
-    - Detailed financial tables.
-    - Glossary of financial terms.
-    - Assumptions used in the analysis.
-References:
-- Sources of information used in the report.                          
-Today is the """)+str(datetime.date.today())+""" .""", key="text_task_in_3")
+  st.session_state.text_task_in1 = st.text_area('Task 1 Researcher:', get_task_desc_researcher(), key="text_task_in_1")
+  st.session_state.text_task_in2 = st.text_area('Task 2 Autor / Writer:', get_task_desc_autor(), key="text_task_in_2")
+  st.session_state.text_task_in3 = st.text_area('Task 3 Business Angel:', get_task_desc_business_angel(), key="text_task_in_3")
 
   task_in_1_new = st.session_state.text_task_in1 if "text_task_in1" in st.session_state else None
   task_in_2_new = st.session_state.text_task_in2 if "text_task_in2" in st.session_state else None
@@ -419,6 +241,17 @@ with tab0:
   temperature_rewrite_task = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', min_value=0.0, max_value=1.0, step=0.01)
 
   if st.button('Start Generation NOW'):
+    run_id = uuid4()
+    rt: RunTree = RunTree(
+        session_name="ai-agents-with-CrewAI",
+        name="Start Generation NOW",
+        inputs={"model_default": model_default, "model_tools": model_tools, "task_description": task_description},
+        id=run_id
+    )
+    rewrite_task = rt.create_child(
+        name="Rewrite Tasks",
+        inputs={"model_rewrite": model_rewrite, "temperature_rewrite_task": temperature_rewrite_task, "task_description": task_description}
+    )
     with st.status("🤖 **Now rewriting the tasks for your three agents...**", state="running", expanded=True) as status:
           ollama_llm_rewrite_task = get_llm(model_rewrite, temperature_rewrite_task)
 
@@ -437,10 +270,12 @@ with tab0:
           llm_chain = LLMChain(prompt=prompt_task_2, llm=ollama_llm_rewrite_task)
           task_in_2_new: str = llm_chain.run({"task_description": task_description})
 
-
           st.text_area('Task 1 Researcher rewritten:', task_in_1_new.strip(), key="text_task_in_1_re")
           st.text_area('Task 3 Business Angel rewritten:', task_in_3_new.strip(), key="text_task_in_3_re")
           st.text_area('Task 2 Autor / Writer rewritten:', task_in_2_new.strip(), key="text_task_in_2_re")
+
+    rewrite_task.end(outputs={'task_in_1_new': task_in_1_new, 'task_in_2_new': task_in_2_new, 'task_in_3_new': task_in_3_new})
+    rewrite_task.post()
 
     # Define your agents with roles and goals
     researcher = Agent(
@@ -506,7 +341,10 @@ with tab0:
       agent=consultant,
       expected_output="Do my work please"
     )
-
+    rt_work: RunTree = rt.create_child(
+        name="Doing work",
+        inputs={"model_researcher": model_researcher, "model_consultant": model_consultant, "model_autor": model_autor}
+    )
     with st.status("🤖 **Agents doing your work...**", state="running", expanded=True) as status:
         with st.container(height=800, border=False):
           crew = Crew(
@@ -518,7 +356,10 @@ with tab0:
           result = crew.kickoff()
         status.update(label="✅ Research activity finished!",
                       state="complete", expanded=False)
-
+    rt_work.end(outputs={'result': result})
+    rt_work.post()
+    rt.end(outputs={'result': result})
+    rt.post()
     print("######################")
     print(result)
     st.subheader('Your requested analysis is ready: :blue[how cool is that] :sunglasses:')
