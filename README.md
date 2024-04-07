@@ -1,8 +1,8 @@
 
-# Based on work from 'Ingmar Stapel'
+# Intro: This is based on work from 'Ingmar Stapel'
 https://github.com/custom-build-robots/ai-agents-with-CrewAI
 
-# Adaptations I did
+# Adaptations I did based on that ...
 Adaptations and some first tryouts using Crew.ai, LangChain, LangSmith, ...
 
 I also use it as a playground to try out function-calling with LangChain.
