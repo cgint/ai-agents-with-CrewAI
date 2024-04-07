@@ -1,4 +1,3 @@
-[__TOC__]
 
 # Based on work from 'Ingmar Stapel'
 https://github.com/custom-build-robots/ai-agents-with-CrewAI
