@@ -32,43 +32,25 @@ from langchain.chains import LLMChain
 # The SearchTools is from his repository.
 #https://github.com/tonykipkemboi/trip_planner_agent
 
-
-# Additional information
-# Ollama as OpenSource large language model server is needed 
-# to run this web-app.
-# URL: https://ollama.com/
-
-# You can choose to use a local model through Ollama for example. 
 from model_helper import get_llm, get_model_defaults, get_models
 from tasks import get_task_desc_autor, get_task_desc_business_angel, get_task_desc_researcher
-
-# I have published a HowTo setup Ollama server that it works over the network
-# URL: https://ai-box.eu/top-story/ollama-ubuntu-installation-und-konfiguration/1191/
-
-# This configures the ollama_llm which will be used by our agents later.
-
 
 # my_question="What about investing in 3M Company (stock ticker symbol 'MMM') ?"
 # my_question="What about investing in 3M Company (MMM) ?"
 # my_question="What about investing in 3M Company ?"
 my_question="What about investing in Tesla Company (stock ticker symbol 'TSLA') ?"
 import model_helper
-# available providers: "openai", "openrouter", "together", "ollama", "groq"
-model_helper.use_provider = "ollama"
+
+model_helper.use_provider = "ollama" # available providers: "openai", "openrouter", "together", "ollama", "groq"
 
 model_default, model_tools = get_model_defaults()
 model_names = None
-# Check if the request was successful
 model_names = get_models()
 model_default_id=model_names.index(model_default)
 model_tools_id=model_names.index(model_tools)
 
 if model_names is None:
     st.error("Failed to fetch data via 'get_models'.")
-
-
-
-from tools.search_tools import SearchTools
 
 st.set_page_config(page_title="Your network of AI agents")
 
@@ -78,20 +60,20 @@ task_value_1 = "empty"
 task_value_2 = "empty"
 task_value_3 = "empty"
 
-
 # This is more or less a work around that hopefully will work for the dd_search.
 @tool("SearchTheInternet")
 @traceable
 def search_search(query: str):
     """Useful to search the internet about a a given topic and return relevant results"""
-    # s = rt.create_child(
-    #     name="SearchTheInternet",
-    #     run_type="tool",
-    #     inputs={"query": query}
-    # )
+    s = rt.create_child(
+        name="SearchTheInternet",
+        run_type="tool",
+        inputs={"query": query}
+    )
+    from tools.search_tools import SearchTools
     search_result: str = SearchTools.search_internet(query)
-    # s.end(outputs={'search_result': search_result})
-    # s.post()
+    s.end(outputs={'search_result': search_result})
+    s.post()
     return search_result
 
 # This is more or less a work around that hopefully will work for the dd_search.
@@ -102,14 +84,14 @@ def dd_search(query: str):
     # Install duckduckgo-search for this example:
     # !pip install -U duckduckgo-search
     from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
-    # s = rt.create_child(
-    #     name="DuckDuckGoSearch",
-    #     run_type="tool",
-    #     inputs={"query": query}
-    # )
+    s = rt.create_child(
+        name="DuckDuckGoSearch",
+        run_type="tool",
+        inputs={"query": query}
+    )
     search_result: str = DuckDuckGoSearchRun().run(query)
-    # s.end(outputs={'search_result': search_result})
-    # s.post()
+    s.end(outputs={'search_result': search_result})
+    s.post()
     return search_result
 
 # To display what the agents are currently doing this streamlit_callback function is needed.
