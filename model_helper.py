@@ -1,4 +1,5 @@
 from langchain_core.language_models import BaseLanguageModel
+from gemini_connect import get_llm_gemini, get_model_default_gemini, get_model_tools_gemini, get_models_gemini
 from groq_connect import get_llm_groq, get_model_default_groq, get_model_tools_groq, get_models_groq
 from ollama_ai_connect import get_model_default_ollama, get_model_tools_ollama, get_models_ollama, get_llm_ollama
 from openrouter_connect import get_model_tools_openrouter, llm_list_openrouter, get_model_default_openrouter, get_llm_openrouter
@@ -20,6 +21,8 @@ def get_llm(model_name: str, temperature: float = 0.1, max_tokens: int = 1000) -
         return get_llm_ollama(model_name, temperature, max_tokens)
     elif use_provider == "groq":
         return get_llm_groq(model_name, temperature, max_tokens)
+    elif use_provider == "gemini":
+        return get_llm_gemini(model_name, temperature, max_tokens)
     else:
         raise ValueError(f"Unsupported provider: {use_provider}")
 
@@ -35,6 +38,8 @@ def get_models() -> list[str]:
         return get_models_ollama()
     elif use_provider == "groq":
         return get_models_groq()
+    elif use_provider == "gemini":
+        return get_models_gemini()
     else:
         raise ValueError(f"Unsupported provider: {use_provider}")
 
@@ -50,6 +55,8 @@ def get_model_defaults() -> tuple[str, str]:
         return get_model_default_ollama(), get_model_tools_ollama()
     elif use_provider == "groq":
         return get_model_default_groq(), get_model_tools_groq()
+    elif use_provider == "gemini":
+        return get_model_default_gemini(), get_model_tools_gemini()
     else:
         raise ValueError(f"Unsupported provider: {use_provider}")
 

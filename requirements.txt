@@ -1,3 +1,4 @@
+asyncio
 requests
 crewai
 crewai-tools
@@ -6,6 +7,8 @@ langchain
 langchain-community
 langchain-together
 langchain-openrouter
+langchain-google-genai
+pillow
 langchain-openai
 langchain-groq
 langchain-experimental
@@ -13,4 +16,7 @@ langsmith
 duckduckgo-search
 unstructured
 openai
+urllib3
 
+yahoo_fin
+requests_html

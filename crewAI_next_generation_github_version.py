@@ -13,13 +13,23 @@
 # Version:  1.0
 # Homepage: https://ai-box.eu/
 
+import asyncio
+
+# Create a new event loop
+loop = asyncio.new_event_loop()
+
+# Set the event loop as the current event loop
+asyncio.set_event_loop(loop)
+
+import time
 from uuid import uuid4
 from crewai import Agent, Task, Crew
 from crewai_tools import tool
 from langsmith import RunTree, traceable
 import streamlit as st
 from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+from langchain.chains.llm import LLMChain
+
 
 # Source
 # The following GitHub repo helped me alot to build this app
@@ -38,10 +48,11 @@ from tasks import get_task_desc_autor, get_task_desc_business_angel, get_task_de
 # my_question="What about investing in 3M Company (stock ticker symbol 'MMM') ?"
 # my_question="What about investing in 3M Company (MMM) ?"
 # my_question="What about investing in 3M Company ?"
-my_question="What about investing in Tesla Company (stock ticker symbol 'TSLA') ?"
+# my_question="What about investing in Tesla Company (stock ticker symbol 'TSLA') ?"
+my_question="What can technology startups contribute to make the world a better place?"
 import model_helper
 
-model_helper.use_provider = "ollama" # available providers: "openai", "openrouter", "together", "ollama", "groq"
+model_helper.use_provider = "gemini" # available providers: "openai", "openrouter", "together", "ollama", "groq", "gemini"
 
 model_default, model_tools = get_model_defaults()
 model_names = None
@@ -153,7 +164,7 @@ with tab1:
   # Create a slider to select the temperature of the llm
   temperature_researcher = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_researcher", min_value=0.0, max_value=1.0, step=0.01)
 
-  max_iterations_researcher = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_researcher", index=1)
+  max_iterations_researcher = st.selectbox('Set the max value for interations:', ('1', '2', '5', '10', '15', '20', '25'), key="iter_researcher", index=1)
   ollama_llm_researcher = get_llm(model_researcher, temperature_researcher)
 
   role_researcher = st.text_area('role:','Senior research analyst', key="role_researcher", height=20)
@@ -168,7 +179,7 @@ with tab2:
   # Create a slider to select the temperature of the llm
   temperature_autor = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_autor", min_value=0.0, max_value=1.0, step=0.01)
 
-  max_iterations_autor = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_autor", index=1)
+  max_iterations_autor = st.selectbox('Set the max value for interations:', ('1', '2', '5', '10', '15', '20', '25'), key="iter_autor", index=1)
   ollama_llm_autor = get_llm(model_autor, temperature_autor)
 
 
@@ -190,7 +201,7 @@ with tab3:
   temperature_consultant = st.slider('Select a LLM temperature value between 0 and 1 [higher is more creative, lower is more coherent]', key="temperature_consultant", min_value=0.0, max_value=1.0, step=0.01)
 
   # Set the max value how long an agent is allowed to interate.
-  max_iterations_consultant = st.selectbox('Set the max value for interations:', ('5', '10', '15', '20', '25'), key="iter_consultant", index=1)
+  max_iterations_consultant = st.selectbox('Set the max value for interations:', ('1', '2', '5', '10', '15', '20', '25'), key="iter_consultant", index=1)
   
   # Define the llm call for the ollama server we like to use for our agent  
   ollama_llm_consultant = get_llm(model_consultant, temperature_consultant)
@@ -215,6 +226,7 @@ with tab4:
 
 with tab0:
   st.title('Do my analysis')
+  st.text(f'Using provider: "{model_helper.use_provider}"')
   task_description = st.text_area('Your short task description here is used to re-write Task 1 - Task 3 so that they fit thematically with the new input.', value=my_question)
 
   model_rewrite = st.selectbox('Select a LLM model for re-writing the tasks 1 - 3:', model_names, key="model_rewrite", index=model_default_id)
@@ -224,6 +236,7 @@ with tab0:
 
   if st.button('Start Generation NOW'):
     run_id = uuid4()
+    start_time = time.time()
     rt: RunTree = RunTree(
         session_name="ai-agents-with-CrewAI",
         name="Start Generation NOW",
@@ -240,7 +253,7 @@ with tab0:
           template_task_1 = "As an AI assistant please write a task description for an AI agent whos role is to be a researcher who like to understand various topics. This is an example task description for an AI agent. The AI agent needs this task to understand what he has to do. \n Example task description:\n" + st.session_state.text_task_in1 + "\n Please rewrite this task description for the new topic which is described as follows: \n New topic: \n{task_description} \nImportant for the rewritten new task description is to keep the structure of the example task description provided."
           prompt_task_1 = PromptTemplate(template=template_task_1, input_variables=["task_description"])
           llm_chain = LLMChain(prompt=prompt_task_1, llm=ollama_llm_rewrite_task)
-          task_in_1_new: str = llm_chain.run({"task_description": task_description})
+          task_in_1_new_cr: str = llm_chain.run({"task_description": task_description})
 
           template_task_3 = "As an AI assistant please write a task description for an AI agent whos role is an business angle investor who does analysis. This is an example task description for an AI agent. The AI agent needs this task to understand what he has to do. \n Example task description:\n" + st.session_state.text_task_in3 + "\n Please rewrite this task description for the new topic which is described as follows: \n New topic: \n{task_description} \nImportant for the rewritten new task description is to keep the structure of the example task description provided."
           prompt_task_3 = PromptTemplate(template=template_task_3, input_variables=["task_description"])
@@ -342,9 +355,11 @@ with tab0:
     rt_work.post()
     rt.end(outputs={'result': result})
     rt.post()
+    end_time = time.time()
+    duration_sec = int(end_time - start_time)
     print("######################")
     print(result)
-    st.subheader('Your requested analysis is ready: :blue[how cool is that] :sunglasses:')
+    st.subheader(f'Your requested analysis is ready and took {duration_sec} seconds :sunglasses:')
     st.markdown(result)
 
     st.download_button(

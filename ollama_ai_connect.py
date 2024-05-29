@@ -2,7 +2,7 @@ import requests
 from langchain_core.language_models import BaseLanguageModel
 from langchain_community.llms.ollama import Ollama
 
-ollama_ip_address = "127.0.0.1"
+ollama_ip_address = "mimic.local" #"127.0.0.1"
 ollama_port = "11434"
 # ollama_ip_address = "192.168.0.99"
 # ollama_port = "11430" # ollama proxy
@@ -22,12 +22,14 @@ def get_models_ollama():
     return model_names
 
 def get_model_default_ollama() -> str:
-    # return "openhermes:latest"
-    # return "llama2:latest"
-    return "mistral:latest"
+    # return "gemma:latest"
+    return "openhermes:latest"
+    # return "llama3:latest"
+    # return "mistral:latest"
 
 def get_model_tools_ollama() -> str:
+    # return "gemma:latest"
     return "openhermes:latest"
-    # return "llama2:latest"
+    # return "llama3:latest"
     # return "mistral:latest"
 
